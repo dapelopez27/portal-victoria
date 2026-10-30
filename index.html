@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portal de Victoria</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap">
+<meta name="description" content="Videos y ejercicios para preparar el diagnóstico de 3ro primaria.">
+<style>
+  /* Tablero de práctica: saludo + avance arriba, tarjetas de temas en cuadrícula, una pregunta a la vez. */
+  :root { --bg:#fff8ee; --card:#fff; --ink:#2b2340; --muted:#6b6480; --mate:#3b6fd4; --leng:#c94468; --on:#fff;
+    --ok:#1f9d55; --bad:#e8833a; --star:#f5b301; --line:#eadfce; --track:#eee4d4; --soft:#f6f1ff;
+    --okbg:#d8f3e2; --badbg:#ffe8d6; --fbmal:#fff1e4; --tagbg:#ffe4d1; --tagfg:#a34a0b; --tagokfg:#156b3a;
+    --suj:#dce7ff; --colline:#cfd6e6; --sec:#efe6d8; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#1b1726; --card:#262036; --ink:#f1ecfa; --muted:#b2a9c6; --mate:#86a8f2; --leng:#f07b9a; --on:#14111d;
+    --ok:#4cc483; --bad:#f0a066; --star:#f5c542; --line:#3a3250; --track:#3a3250; --soft:#2f2842;
+    --okbg:#1d3b2b; --badbg:#43301f; --fbmal:#3a2b1e; --tagbg:#4a2e1c; --tagfg:#ffc79d; --tagokfg:#8fe0b0;
+    --suj:#24345e; --colline:#4a4266; --sec:#3a3250; color-scheme:dark; } }
+  :root[data-theme="dark"] { --bg:#1b1726; --card:#262036; --ink:#f1ecfa; --muted:#b2a9c6; --mate:#86a8f2; --leng:#f07b9a; --on:#14111d;
+    --ok:#4cc483; --bad:#f0a066; --star:#f5c542; --line:#3a3250; --track:#3a3250; --soft:#2f2842;
+    --okbg:#1d3b2b; --badbg:#43301f; --fbmal:#3a2b1e; --tagbg:#4a2e1c; --tagfg:#ffc79d; --tagokfg:#8fe0b0;
+    --suj:#24345e; --colline:#4a4266; --sec:#3a3250; color-scheme:dark; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:18px/1.45 "Nunito", ui-rounded, "SF Pro Rounded", system-ui, sans-serif; }
+  main { max-width:820px; margin:0 auto; padding-block:16px 60px; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); }
+  h1 { font-size:30px; margin:8px 0 4px; text-wrap:balance; } h2 { font-size:24px; margin:22px 0 10px; }
+  button { font:inherit; color:inherit; cursor:pointer; border:0; border-radius:16px; }
+  button:focus-visible, input:focus-visible { outline:3px solid var(--mate); outline-offset:2px; }
+  .top { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+  .estrellas { background:var(--card); border:2px solid var(--star); border-radius:999px; padding:6px 14px; font-weight:700; }
+  .barra { height:14px; background:var(--track); border-radius:99px; overflow:hidden; } .barra i { display:block; height:100%; background:linear-gradient(90deg,var(--star),var(--ok)); border-radius:99px; transition:width .5s; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:12px; }
+  .tema { background:var(--card); border:2px solid var(--line); border-radius:20px; padding:14px; text-align:left; display:flex; flex-direction:column; gap:8px; min-width:0; }
+  .tema:hover { transform:translateY(-2px); } .tema .e { font-size:34px; } .tema b { font-size:19px; }
+  .tag { align-self:flex-start; font-size:13px; font-weight:700; padding:2px 10px; border-radius:99px; background:var(--tagbg); color:var(--tagfg); }
+  .tag.ok { background:var(--okbg); color:var(--tagokfg); }
+  .mate .barra i { background:var(--mate); } .leng .barra i { background:var(--leng); }
+  .panel { background:var(--card); border:2px solid var(--line); border-radius:22px; padding:20px; min-width:0; overflow-x:auto; }
+  .btn { background:var(--mate); color:var(--on); padding:14px 22px; font-weight:700; font-size:20px; }
+  .btn.sec { background:var(--sec); color:var(--ink); } .btn.leng { background:var(--leng); } .btn.peligro { background:var(--bad); color:var(--on); }
+  .acciones { display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; }
+  .op { display:block; width:100%; text-align:left; background:var(--soft); border:3px solid transparent; padding:14px 16px; margin:8px 0; font-size:20px; }
+  .op:disabled { color:var(--ink); cursor:default; }
+  .op.ok { background:var(--okbg); border-color:var(--ok); } .op.mal { background:var(--badbg); border-color:var(--bad); }
+  input.num { font:inherit; font-size:28px; width:180px; max-width:100%; padding:10px 14px; border:3px solid var(--line); border-radius:14px; background:var(--card); color:var(--ink); }
+  .fb { margin-top:14px; padding:14px; border-radius:16px; } .fb.ok { background:var(--okbg); } .fb.mal { background:var(--fbmal); }
+  .puntos { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; } .puntos span { width:22px; height:22px; border-radius:50%; background:var(--track); }
+  .puntos .ok { background:var(--ok); } .puntos .mal { background:var(--bad); } .puntos .ya { outline:3px solid var(--mate); }
+  .grande { font-size:30px; font-weight:800; letter-spacing:.5px; }
+  .tabla { border-collapse:collapse; margin:10px 0; } .tabla td { border:2px solid var(--line); padding:6px 10px; }
+  .grande-t td { font-size:26px; font-weight:800; text-align:center; min-width:52px; }
+  table.col { border-collapse:collapse; margin:12px 0; font-size:30px; font-weight:800; font-variant-numeric:tabular-nums; } table.col td { width:44px; height:44px; text-align:center; border:2px solid var(--colline); }
+  table.col tr.ln td { border-top:4px solid var(--ink); }
+  .suj { background:var(--suj); padding:2px 6px; border-radius:6px; } .pred { background:var(--okbg); padding:2px 6px; border-radius:6px; }
+  .frac { display:block; margin:10px 0; max-width:100%; height:auto; }
+  video { width:100%; max-width:100%; border-radius:16px; background:#000; margin:10px 0; }
+  .fiesta { position:fixed; inset:0; pointer-events:none; overflow:hidden; } .fiesta span { position:absolute; top:-40px; font-size:30px; animation:cae 1.8s ease-in forwards; }
+  @keyframes cae { to { transform:translateY(110vh) rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .fiesta { display:none; } .tema:hover { transform:none; } .barra i { transition:none; } }
+  .papa td, .papa th { border-bottom:1px solid var(--line); padding:6px 8px; text-align:left; font-size:16px; }
+  .papa { border-collapse:collapse; width:100%; }
+  .link { background:none; color:var(--muted); text-decoration:underline; padding:4px; font-size:15px; }
+  @media (max-width:480px) { body { font-size:17px; } .grande { font-size:26px; } h1 { font-size:26px; } }
+</style>
+</head>
+<body>
+<main id="app"></main>
+<div class="fiesta" id="fiesta"></div>
+<script src="logica.js"></script>
+<script>
+const $ = (s) => document.querySelector(s), app = $('#app');
+const RONDA = 10, CLAVE = 'portal-victoria-v1';
+const BIEN = ['¡Muy bien, Victoria! ⭐', '¡Eso es! 🎉', '¡Excelente! 💪', '¡Lo lograste! 🌟', '¡Qué inteligente! 🧠', '¡Súper! 🚀'];
+const CASI = ['¡Casi! Mira cómo se hace 👀', 'No pasa nada, así se aprende 💛', 'Vamos a verlo juntas paso a paso 👣'];
+const pick = (a) => a[Math.floor(Math.random() * a.length)];
+
+// Avance guardado en este aparato (si el navegador lo bloquea, funciona igual sin guardar)
+function cargar() { try { return JSON.parse(localStorage.getItem(CLAVE)) || null; } catch { return null; } }
+let E = cargar() || { temas: {}, estrellas: 0, historial: [] };
+function guardar() { try { localStorage.setItem(CLAVE, JSON.stringify(E)); } catch {} }
+const avance = (id) => Math.min(100, ((E.temas[id] || {}).mejor || 0) * 10);
+const general = () => Math.round(L.TEMAS.reduce((s, t) => s + avance(t.id), 0) / L.TEMAS.length);
+
+function fiesta(n = 30) {
+  const f = $('#fiesta');
+  for (let i = 0; i < n; i++) {
+    const s = document.createElement('span');
+    s.textContent = pick(['⭐', '🎉', '✨', '💛', '🌟', '🎈']);
+    s.style.left = Math.random() * 100 + 'vw'; s.style.animationDelay = Math.random() * 0.6 + 's';
+    f.appendChild(s); setTimeout(() => s.remove(), 2600);
+  }
+}
+
+function inicio() {
+  const tarjeta = (t) => {
+    const a = avance(t.id);
+    return `<button class="tema ${t.materia}" data-id="${t.id}">
+      <span class="e" aria-hidden="true">${t.emoji}</span><b>${t.nombre}</b>
+      ${a >= 90 ? '<span class="tag ok">🏅 ¡Dominado!</span>' : t.urge ? `<span class="tag">${t.id === 'division' || t.id === 'problemas' ? 'Empieza aquí' : 'Repasar'}</span>` : ''}
+      <span class="barra"><i style="width:${a}%"></i></span><small>${a}%</small></button>`;
+  };
+  const g = general();
+  app.innerHTML = `
+    <div class="top"><h1>¡Hola, Victoria! 👋</h1><span class="estrellas">⭐ ${E.estrellas} estrellas</span></div>
+    <p>Llevas <b>${g}%</b> del camino para tu examen de 3ro primaria.</p>
+    <div class="barra"><i style="width:${g}%"></i></div>
+    <h2>🔢 Matemáticas</h2><div class="grid">${L.TEMAS.filter((t) => t.materia === 'mate').map(tarjeta).join('')}</div>
+    <h2>📖 Comunicación y Lenguaje</h2><div class="grid">${L.TEMAS.filter((t) => t.materia === 'leng').map(tarjeta).join('')}</div>
+    <p style="margin-top:30px"><button class="link" id="papa">Para papá y mamá</button></p>`;
+  app.querySelectorAll('.tema').forEach((b) => b.onclick = () => aprende(L.TEMAS.find((t) => t.id === b.dataset.id)));
+  $('#papa').onclick = papa;
+  scrollTo(0, 0);
+}
+
+function aprende(t) {
+  app.innerHTML = `
+    <button class="link" id="volver">← Volver</button>
+    <h1>${t.emoji} ${t.nombre}</h1>
+    <div class="panel">
+      ${t.video ? `<video id="vid" src="${t.video}" controls playsinline preload="metadata"></video>` : ''}
+      ${t.aprende}
+    </div>
+    <div class="acciones"><button class="btn ${t.materia === 'leng' ? 'leng' : ''}" id="ya">¡A practicar! 💪</button></div>`;
+  const v = $('#vid'); if (v) v.onerror = () => v.remove();
+  $('#volver').onclick = inicio; $('#ya').onclick = () => practica(t);
+  scrollTo(0, 0);
+}
+
+function practica(t) {
+  const R = { t, i: 0, bien: 0, marcas: [], inicio: Date.now() };
+  const siguiente = () => {
+    if (R.i === RONDA) return final(R);
+    const q = t.gen();
+    app.innerHTML = `
+      <button class="link" id="volver">← Salir</button>
+      <h1>${t.emoji} ${t.nombre}</h1>
+      <div class="puntos">${Array.from({ length: RONDA }, (_, k) => `<span class="${R.marcas[k] || (k === R.i ? 'ya' : '')}"></span>`).join('')}</div>
+      <div class="panel">
+        <div>${q.texto}</div>
+        <div id="resp">${q.opciones ? q.opciones.map((o) => `<button class="op">${o}</button>`).join('') :
+          `<form id="f" style="margin-top:14px"><input class="num" id="n" inputmode="numeric" autocomplete="off" aria-label="Tu respuesta"> <button class="btn">Revisar</button></form>`}</div>
+        <div id="fb"></div>
+      </div>`;
+    $('#volver').onclick = inicio;
+    const revisar = (dada, boton) => {
+      const ok = dada.trim().toLowerCase() === q.respuesta.toLowerCase();
+      R.marcas[R.i] = ok ? 'ok' : 'mal';
+      if (ok) { R.bien++; E.estrellas++; guardar(); }
+      app.querySelectorAll('.op').forEach((b) => { b.disabled = true; if (b.textContent === q.respuesta) b.classList.add('ok'); });
+      if (boton && !ok) boton.classList.add('mal');
+      const inp = $('#n'); if (inp) inp.disabled = true;
+      $('#fb').innerHTML = `<div class="fb ${ok ? 'ok' : 'mal'}"><b>${ok ? pick(BIEN) : pick(CASI)}</b>${ok ? '' : `<p>La respuesta es <b>${q.respuesta}</b>.</p>`}<p>${q.explica}</p></div>
+        <div class="acciones"><button class="btn" id="sig">${R.i + 1 === RONDA ? 'Ver mi resultado 🏁' : 'Siguiente →'}</button></div>`;
+      R.i++; $('#sig').onclick = siguiente; $('#sig').focus();
+    };
+    app.querySelectorAll('.op').forEach((b) => b.onclick = () => revisar(b.textContent, b));
+    const f = $('#f'); if (f) { $('#n').focus(); f.onsubmit = (e) => { e.preventDefault(); if ($('#n').value.trim()) revisar($('#n').value); }; }
+  };
+  siguiente();
+}
+
+function final(R) {
+  const { t, bien } = R, d = E.temas[t.id] || (E.temas[t.id] = { mejor: 0 });
+  const nuevo = bien > d.mejor; d.mejor = Math.max(d.mejor, bien);
+  E.historial.push({ fecha: new Date().toISOString(), tema: t.id, bien, de: RONDA, seg: Math.round((Date.now() - R.inicio) / 1000) });
+  guardar();
+  const msg = bien === RONDA ? '¡PERFECTO! Eres una campeona 🏆' : bien >= 8 ? '¡Muy bien! Ya casi lo dominas 🌟' : bien >= 5 ? '¡Vas mejorando! Una ronda más y lo logras 💪' : 'Cada intento te hace más fuerte. ¡Otra vez! 💛';
+  app.innerHTML = `
+    <h1>${t.emoji} ${t.nombre}</h1>
+    <div class="panel" style="text-align:center">
+      <p class="grande">${bien} de ${RONDA}</p><p style="font-size:34px">${'⭐'.repeat(bien) || '💛'}</p>
+      <p><b>${msg}</b></p>${nuevo && bien < RONDA ? '<p>🎯 ¡Nuevo récord en este tema!</p>' : ''}
+      <div class="barra"><i style="width:${avance(t.id)}%"></i></div><p>${avance(t.id)}% de este tema</p>
+    </div>
+    <div class="acciones"><button class="btn" id="otra">Otra ronda 🔁</button><button class="btn sec" id="aprende">Ver la explicación</button><button class="btn sec" id="inicio">Inicio 🏠</button></div>`;
+  if (bien >= 8) fiesta(bien === RONDA ? 60 : 30);
+  $('#otra').onclick = () => practica(t); $('#aprende').onclick = () => aprende(t); $('#inicio').onclick = inicio;
+}
+
+function papa() {
+  const nombre = (id) => (L.TEMAS.find((t) => t.id === id) || {}).nombre || id;
+  const filas = E.historial.slice().reverse().map((h) => {
+    const f = new Date(h.fecha);
+    return `<tr><td>${f.toLocaleDateString('es-GT')} ${f.toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' })}</td><td>${nombre(h.tema)}</td><td>${h.bien}/${h.de}</td><td>${Math.max(1, Math.round(h.seg / 60))} min</td></tr>`;
+  }).join('');
+  const hoy = new Date().toDateString(), deHoy = E.historial.filter((h) => new Date(h.fecha).toDateString() === hoy);
+  app.innerHTML = `
+    <button class="link" id="volver">← Volver</button>
+    <h1>Para papá y mamá</h1>
+    <div class="panel">
+      <p><b>Hoy:</b> ${deHoy.length} rondas, ${deHoy.reduce((s, h) => s + h.bien, 0)} aciertos, ${Math.round(deHoy.reduce((s, h) => s + h.seg, 0) / 60)} min.</p>
+      <p><b>Avance general:</b> ${general()}% · <b>Estrellas:</b> ${E.estrellas}</p>
+      <table class="papa"><tr><th>Tema</th><th>Avance</th></tr>${L.TEMAS.map((t) => `<tr><td>${t.emoji} ${t.nombre}</td><td>${avance(t.id)}%</td></tr>`).join('')}</table>
+      <h2>Historial</h2>
+      ${filas ? `<table class="papa"><tr><th>Cuándo</th><th>Tema</th><th>Aciertos</th><th>Tiempo</th></tr>${filas}</table>` : '<p>Todavía no hay rondas.</p>'}
+      <p style="margin-top:20px"><button class="link" id="borrar">Borrar todo el avance</button></p>
+      <div id="seguro" hidden><p><b>¿Seguro? Se borran las estrellas y el historial de Victoria en este aparato.</b></p>
+        <div class="acciones"><button class="btn peligro" id="si">Sí, borrar</button><button class="btn sec" id="no">No, dejarlo</button></div></div>
+    </div>`;
+  $('#volver').onclick = inicio;
+  $('#borrar').onclick = () => { $('#seguro').hidden = false; };
+  $('#no').onclick = () => { $('#seguro').hidden = true; };
+  $('#si').onclick = () => { E = { temas: {}, estrellas: 0, historial: [] }; guardar(); papa(); };
+}
+
+inicio();
+</script>
+</body>
+</html>
