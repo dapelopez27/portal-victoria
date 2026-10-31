@@ -90,7 +90,7 @@
 <body>
 <main id="app"></main>
 <div class="fiesta" id="fiesta"></div>
-<script src="logica.js?v=20261031c"></script>
+<script src="logica.js?v=20261031d"></script>
 <script>
 const $ = (s) => document.querySelector(s), app = $('#app');
 const RONDA = 5, CLAVE = 'portal-victoria-v1';
@@ -146,7 +146,7 @@ function inicio() {
     <div class="top"><h1>¡Hola, Victoria! 👋</h1><span class="estrellas">⭐ ${E.estrellas} estrellas</span></div>
     <p>Llevas <b>${g}%</b> del camino para tu examen de 3ro primaria.</p>
     <div class="barra"><i style="width:${g}%"></i></div>
-    ${(() => { const m = hoyMision(); return `<button class="reto-card mision-card" id="mision"><span><b>🗺️ Misión del día</b><br>${m.cumplida ? '¡Cumplida! 🏆 Vuelve mañana' : `Paso ${m.hechos.length + 1} de 3 · unos 15 minutos`}</span><span class="racha">${'✅'.repeat(m.hechos.length)}${'⬜'.repeat(3 - m.hechos.length)}</span></button>`; })()}
+    ${(() => { const m = hoyMision(); return `<button class="reto-card mision-card" id="mision"><span><b>🗺️ Misión del día</b><br>${m.cumplida ? '¡Cumplida! 🏆 Vuelve mañana' : `Paso ${m.hechos.length + 1} de 3 · unos 20 minutos`}</span><span class="racha">${'✅'.repeat(m.hechos.length)}${'⬜'.repeat(3 - m.hechos.length)}</span></button>`; })()}
     <button class="reto-card" id="reto"><span><b>⚡ Reto del día: tablas</b><br>${ri.hecho ? 'Hecho hoy ✅ ¿Otra vuelta?' : '10 tablas · unos 3 minutos'} · ${ri.vistas} de 90 practicadas</span><span class="racha">🔥 ${ri.racha} ${ri.racha === 1 ? 'día' : 'días'}</span></button>
     <button class="reto-card examen-card" id="examen"><span><b>📝 Modo examen</b><br>15 preguntas sin ayuda, como en el colegio · calificación al final</span><span class="racha">${E.examenes.length ? `${Math.max(...E.examenes.map((x) => x.nota))}/15` : '¡Pruébalo!'}</span></button>
     <h2>🔢 Matemáticas</h2><div class="grid">${L.TEMAS.filter((t) => t.materia === 'mate').map(tarjeta).join('')}</div>
@@ -232,7 +232,6 @@ function reto() {
 
 function retoFinal(R) {
   document.onkeydown = null;
-  marcaMision('reto');
   const h = hoyStr();
   if (!E.reto.dias.includes(h)) E.reto.dias.push(h);
   E.reto.hist.push({ fecha: new Date().toISOString(), bien: R.bien, de: R.total, rapidas: R.rapidas, seg: Math.round((Date.now() - R.inicio) / 1000) });
@@ -257,22 +256,40 @@ function retoFinal(R) {
 }
 
 // ---------- Misión del día: 3 pasos cortos para no tener que escoger ----------
-function temaDelDia() {
-  const urg = L.TEMAS.filter((t) => t.urge && t.id !== 'mental');
-  return urg.reduce((m, t) => (avance(t.id) < avance(m.id) ? t : m), urg[0]);
+// Los temas que más le cuestan (31-oct): la misión siempre sale de aquí
+const FOCO = ['romanos', 'ordinales', 'equivalencias', 'fracciones', 'sujeto', 'tildes', 'aumentativos'];
+function temasDelDia() {
+  return FOCO.map((id, k) => ({ id, k, a: avance(id) })).sort((x, y) => x.a - y.a || x.k - y.k).slice(0, 2).map((x) => x.id);
 }
 function hoyMision() {
   const h = hoyStr();
-  if (!E.mision || E.mision.fecha !== h) { E.mision = { fecha: h, tema: temaDelDia().id, hechos: [] }; guardar(); }
+  if (!E.mision || E.mision.fecha !== h || !E.mision.temas) { E.mision = { fecha: h, temas: temasDelDia(), hechos: [] }; guardar(); }
   return E.mision;
 }
 function pasosMision(m) {
-  const t = L.TEMAS.find((x) => x.id === m.tema), mental = L.TEMAS.find((x) => x.id === 'mental');
+  const [t1, t2] = m.temas.map((id) => L.TEMAS.find((x) => x.id === id)), mental = L.TEMAS.find((x) => x.id === 'mental');
   return [
-    { id: 'tema', txt: `${t.emoji} Aprende y practica: <b>${t.nombre}</b>`, go: () => aprende(t) },
+    { id: 't1', txt: `${t1.emoji} Aprende y practica: <b>${t1.nombre}</b>`, go: () => aprende(t1) },
+    { id: 't2', txt: `${t2.emoji} Aprende y practica: <b>${t2.nombre}</b>`, go: () => aprende(t2) },
     { id: 'mental', txt: '🧠 5 sumas en la mente, <b>sin dedos</b>', go: () => practica(mental) },
-    { id: 'reto', txt: '⚡ Reto de tablas', go: reto },
   ];
+}
+// 📲 Resumen para mandarle a papá por WhatsApp
+function resumen() {
+  const h = hoyStr(), hoy = E.historial.filter((x) => new Date(x.fecha).toLocaleDateString('en-CA') === h), m = E.mision && E.mision.fecha === h ? E.mision : null;
+  const ex = E.examenes.filter((x) => new Date(x.fecha).toLocaleDateString('en-CA') === h);
+  return [`📚 Avance de Victoria (${new Date().toLocaleDateString('es-GT')})`,
+    `🗺️ Misión de hoy: ${m ? m.hechos.length : 0} de 3 pasos${m && m.cumplida ? ' ✅ ¡cumplida!' : ''}`,
+    `✏️ Hoy: ${hoy.length} rondas, ${hoy.reduce((a, x) => a + x.bien, 0)} aciertos de ${hoy.reduce((a, x) => a + x.de, 0)}, ${Math.round(hoy.reduce((a, x) => a + x.seg, 0) / 60)} min`,
+    ...(ex.length ? [`📝 Examen: ${ex.map((x) => `${x.nota}/${x.de}`).join(', ')}`] : []),
+    `⭐ Estrellas: ${E.estrellas}`,
+    '', 'Temas que estoy reforzando:',
+    ...FOCO.map((id) => { const t = L.TEMAS.find((x) => x.id === id); return `${t.emoji} ${t.nombre}: ${avance(id)}%`; })].join('\n');
+}
+const botonPapa = () => `<div class="acciones"><a class="btn" style="text-decoration:none;background:#25a35a" href="https://wa.me/?text=${encodeURIComponent(resumen())}" target="_blank" rel="noopener">📲 Mandar mi avance a papá</a><button class="btn sec" id="copiar">Copiar</button></div><p class="nota" id="copiado"></p>`;
+function activaPapa() {
+  const b = $('#copiar'); if (!b) return;
+  b.onclick = () => { navigator.clipboard.writeText(resumen()).then(() => { $('#copiado').textContent = '✓ Copiado. Pégalo en WhatsApp.'; }, () => { $('#copiado').textContent = resumen(); }); };
 }
 function marcaMision(id) {
   const m = hoyMision();
@@ -286,11 +303,13 @@ function mision() {
   app.innerHTML = `
     <button class="link" id="volver">← Volver</button>
     <h1>🗺️ Misión del día</h1>
-    <p>${m.cumplida ? '' : 'Son 3 pasos cortos, unos 15 minutos. ¡Vamos paso por paso!'}</p>
-    ${m.cumplida ? `<div class="panel" style="text-align:center"><p class="grande">🏆 ¡Misión cumplida!</p><p>Llevas <b>${E.misiones}</b> ${E.misiones === 1 ? 'misión cumplida' : 'misiones cumplidas'}. ¡Eres constante y eso te hace más inteligente! 💛</p><p>Pídele a papá o mamá tu premio. Mañana hay una misión nueva.</p></div>` : ''}
+    <p>${m.cumplida ? '' : 'Son 3 pasos cortos, unos 20 minutos. ¡Vamos paso por paso!'}</p>
+    ${m.cumplida ? `<div class="panel" style="text-align:center"><p class="grande">🏆 ¡Misión cumplida!</p><p>Llevas <b>${E.misiones}</b> ${E.misiones === 1 ? 'misión cumplida' : 'misiones cumplidas'}. ¡Eres constante y eso te hace más inteligente! 💛</p><p>Mándale tu avance a papá para que vea lo bien que vas. Mañana hay una misión nueva.</p>${botonPapa()}</div>` : ''}
     <div class="grid" style="margin-top:14px">${pasos.map((p, k) => `<button class="tema" data-k="${k}" ${!m.cumplida && k !== toca ? 'style="opacity:.6"' : ''}>
-      <span class="e">${m.hechos.includes(p.id) ? '✅' : k === toca ? '👉' : '⏳'}</span><span>Paso ${k + 1}: ${p.txt}</span></button>`).join('')}</div>`;
+      <span class="e">${m.hechos.includes(p.id) ? '✅' : k === toca ? '👉' : '⏳'}</span><span>Paso ${k + 1}: ${p.txt}</span></button>`).join('')}</div>
+    ${m.cumplida ? '' : `<h2>📲 ¿Terminaste por hoy?</h2><p>Mándale a papá lo que hiciste.</p>${botonPapa()}`}`;
   if (m.nueva) { fiesta(60); m.nueva = false; guardar(); }
+  activaPapa();
   $('#volver').onclick = inicio;
   app.querySelectorAll('[data-k]').forEach((b) => b.onclick = () => pasos[+b.dataset.k].go());
   scrollTo(0, 0);
@@ -435,7 +454,9 @@ function practica(t) {
 
 function final(R) {
   const { t, bien } = R, nuevo = bien > R.antes;
-  if (t.id === hoyMision().tema) marcaMision('tema');
+  const mi = hoyMision();
+  if (t.id === mi.temas[0]) marcaMision('t1');
+  if (t.id === mi.temas[1]) marcaMision('t2');
   if (t.id === 'mental') marcaMision('mental');
   const msg = bien === RONDA ? '¡PERFECTO! Eres una campeona 🏆' : bien >= RONDA - 1 ? '¡Muy bien! Ya casi lo dominas 🌟' : bien >= Math.ceil(RONDA / 2) ? '¡Vas mejorando! Una ronda más y lo logras 💪' : 'Cada intento te hace más fuerte. ¡Otra vez! 💛';
   app.innerHTML = `
@@ -465,6 +486,7 @@ function papa() {
       <p><b>Hoy:</b> ${deHoy.length} rondas, ${deHoy.reduce((s, h) => s + h.bien, 0)} aciertos, ${Math.round(deHoy.reduce((s, h) => s + h.seg, 0) / 60)} min.</p>
       <p><b>Avance general:</b> ${general()}% · <b>Estrellas:</b> ${E.estrellas}</p>
       <p>🗺️ Misiones cumplidas: <b>${E.misiones || 0}</b>${E.mision && E.mision.fecha === hoyStr() ? ` · Hoy: ${E.mision.hechos.length} de 3 pasos` : ''}</p>
+      ${botonPapa()}
       <h2>⚡ Reto de tablas</h2>
       ${(() => { const ri = retoInfo(), fall = Object.entries(E.reto.est).filter(([, v]) => v.mal > 0).sort((x, y) => y[1].mal - x[1].mal).slice(0, 5);
         const ult = E.reto.hist.slice(-5).reverse().map((r) => `<tr><td>${new Date(r.fecha).toLocaleDateString('es-GT')}</td><td>${r.bien}/${r.de}</td><td>⚡ ${r.rapidas}</td><td>${Math.max(1, Math.round(r.seg / 60))} min</td></tr>`).join('');
@@ -482,7 +504,7 @@ function papa() {
       <div id="seguro" hidden><p><b>¿Seguro? Se borran las estrellas y el historial de Victoria en este aparato.</b></p>
         <div class="acciones"><button class="btn peligro" id="si">Sí, borrar</button><button class="btn sec" id="no">No, dejarlo</button></div></div>
     </div>`;
-  $('#volver').onclick = inicio;
+  $('#volver').onclick = inicio; activaPapa();
   $('#borrar').onclick = () => { $('#seguro').hidden = false; };
   $('#no').onclick = () => { $('#seguro').hidden = true; };
   $('#si').onclick = () => { E = { temas: {}, estrellas: 0, historial: [], reto: { est: {}, dias: [], hist: [] }, examenes: [] }; guardar(); papa(); };
