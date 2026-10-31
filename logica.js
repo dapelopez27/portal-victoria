@@ -292,7 +292,7 @@
   const TEMAS = [
     { id: 'division', materia: 'mate', nombre: 'La división', emoji: '🍬', urge: true, video: 'videos/division.mp4',
       aprende: `<p><b>Dividir es repartir en partes iguales.</b></p><p>🍬🍬🍬🍬🍬🍬🍬🍬🍬🍬🍬🍬 12 dulces entre 3 niños → a cada uno le tocan <b>4</b>.</p><p class="grande">12 ÷ 3 = 4</p><table class="tabla"><tr><td><b>12</b></td><td>dividendo</td><td>lo que reparto</td></tr><tr><td><b>3</b></td><td>divisor</td><td>entre cuántos</td></tr><tr><td><b>4</b></td><td>cociente</td><td>cuánto le toca a cada uno</td></tr><tr><td><b>?</b></td><td>residuo</td><td>lo que sobra</td></tr></table><p><b>Truco:</b> usa la tabla de multiplicar. Para 12 ÷ 3 me pregunto: ¿3 × cuánto da 12? → 3 × 4 = 12 → la respuesta es 4.</p><p><b>Cuando sobra:</b> 14 ÷ 3 → 3 × 4 = 12, y de 14 a 12 sobran 2 → residuo 2.</p>` },
-    { id: 'mental', materia: 'mate', nombre: 'Sumas en la mente (sin dedos)', emoji: '🧠', urge: true,
+    { id: 'mental', materia: 'mate', nombre: 'Sumas en la mente (sin dedos)', emoji: '🧠', urge: true, video: 'videos/mental.mp4',
       aprende: `<p>Los dedos sirven al principio, pero son lentos y se confunden. Estos <b>trucos</b> son más rápidos y se hacen en la mente:</p>
         <table class="tabla"><tr><td>🔟 <b>Completa el 10</b></td><td>8 + 5 → al 8 le faltan 2 para 10. Le quito 2 al 5 y quedan 3 → 10 + 3 = <b>13</b></td></tr>
         <tr><td>👯 <b>Dobles</b></td><td>6 + 7 → 6 + 6 = 12, y uno más = <b>13</b></td></tr>
