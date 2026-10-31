@@ -57,9 +57,24 @@
   video { width:100%; max-width:100%; border-radius:16px; background:#000; margin:10px 0; }
   .fiesta { position:fixed; inset:0; pointer-events:none; overflow:hidden; } .fiesta span { position:absolute; top:-40px; font-size:30px; animation:cae 1.8s ease-in forwards; }
   @keyframes cae { to { transform:translateY(110vh) rotate(360deg); } }
-  @media (prefers-reduced-motion: reduce) { .fiesta { display:none; } .tema:hover { transform:none; } .barra i { transition:none; } }
+  @media (prefers-reduced-motion: reduce) { .fiesta { display:none; } .tiempo i { animation:none; } .tema:hover { transform:none; } .barra i { transition:none; } }
   .papa td, .papa th { border-bottom:1px solid var(--line); padding:6px 8px; text-align:left; font-size:16px; }
   .papa { border-collapse:collapse; width:100%; }
+  .reto-card { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; width:100%; text-align:left; margin-top:16px; background:var(--card); border:3px solid var(--star); border-radius:22px; padding:16px 18px; }
+  .reto-card b { font-size:22px; } .reto-card .racha { font-size:28px; font-weight:900; white-space:nowrap; }
+  .reto-q { font-size:64px; font-weight:900; text-align:center; font-variant-numeric:tabular-nums; margin:6px 0; }
+  .pantalla { font-size:48px; font-weight:900; text-align:center; min-height:72px; border:3px solid var(--line); border-radius:16px; background:var(--card); font-variant-numeric:tabular-nums; }
+  .teclado { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:12px; max-width:420px; margin-inline:auto; }
+  .teclado button { font-size:32px; font-weight:800; padding:14px 0; background:var(--soft); }
+  .teclado .listo { background:var(--ok); color:var(--on); } .teclado .borra { background:var(--sec); }
+  .tiempo { height:10px; background:var(--track); border-radius:99px; overflow:hidden; margin:8px 0 14px; }
+  .tiempo i { display:block; height:100%; width:100%; background:var(--star); transform-origin:left; animation:reloj 6s linear forwards; }
+  @keyframes reloj { to { transform:scaleX(0); } }
+  .mapa { border-collapse:separate; border-spacing:3px; margin:8px auto; font-variant-numeric:tabular-nums; }
+  .mapa th { font-size:13px; color:var(--muted); padding:0 4px; } .mapa td { width:28px; height:26px; border-radius:6px; background:var(--track); }
+  .mapa td.c0 { background:var(--bad); } .mapa td.c1, .mapa td.c2 { background:var(--star); } .mapa td.c3, .mapa td.c4 { background:var(--okbg); outline:2px solid var(--ok); } .mapa td.c5 { background:var(--ok); }
+  .leyenda { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; font-size:14px; color:var(--muted); }
+  .leyenda span::before { content:""; display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:4px; vertical-align:-1px; background:var(--c); }
   .link { background:none; color:var(--muted); text-decoration:underline; padding:4px; font-size:15px; }
   @media (max-width:480px) { body { font-size:17px; } .grande { font-size:26px; } h1 { font-size:26px; } }
 </style>
@@ -78,6 +93,7 @@ const pick = (a) => a[Math.floor(Math.random() * a.length)];
 // Avance guardado en este aparato (si el navegador lo bloquea, funciona igual sin guardar)
 function cargar() { try { return JSON.parse(localStorage.getItem(CLAVE)) || null; } catch { return null; } }
 let E = cargar() || { temas: {}, estrellas: 0, historial: [] };
+E.reto = E.reto || { est: {}, dias: [], hist: [] };
 function guardar() { try { localStorage.setItem(CLAVE, JSON.stringify(E)); } catch {} }
 const avance = (id) => Math.min(100, ((E.temas[id] || {}).mejor || 0) * 10);
 const general = () => Math.round(L.TEMAS.reduce((s, t) => s + avance(t.id), 0) / L.TEMAS.length);
@@ -100,16 +116,111 @@ function inicio() {
       ${a >= 90 ? '<span class="tag ok">🏅 ¡Dominado!</span>' : t.urge ? `<span class="tag">${t.id === 'division' || t.id === 'problemas' ? 'Empieza aquí' : 'Repasar'}</span>` : ''}
       <span class="barra"><i style="width:${a}%"></i></span><small>${a}%</small></button>`;
   };
-  const g = general();
+  const g = general(), ri = retoInfo();
   app.innerHTML = `
     <div class="top"><h1>¡Hola, Victoria! 👋</h1><span class="estrellas">⭐ ${E.estrellas} estrellas</span></div>
     <p>Llevas <b>${g}%</b> del camino para tu examen de 3ro primaria.</p>
     <div class="barra"><i style="width:${g}%"></i></div>
+    <button class="reto-card" id="reto"><span><b>⚡ Reto del día: tablas</b><br>${ri.hecho ? 'Hecho hoy ✅ ¿Otra vuelta?' : '10 tablas · unos 3 minutos'} · ${ri.vistas} de 90 practicadas</span><span class="racha">🔥 ${ri.racha} ${ri.racha === 1 ? 'día' : 'días'}</span></button>
     <h2>🔢 Matemáticas</h2><div class="grid">${L.TEMAS.filter((t) => t.materia === 'mate').map(tarjeta).join('')}</div>
     <h2>📖 Comunicación y Lenguaje</h2><div class="grid">${L.TEMAS.filter((t) => t.materia === 'leng').map(tarjeta).join('')}</div>
     <p style="margin-top:30px"><button class="link" id="papa">Para papá y mamá</button></p>`;
   app.querySelectorAll('.tema').forEach((b) => b.onclick = () => aprende(L.TEMAS.find((t) => t.id === b.dataset.id)));
-  $('#papa').onclick = papa;
+  $('#papa').onclick = papa; $('#reto').onclick = reto;
+  scrollTo(0, 0);
+}
+
+// ---------- Reto del día: tablas con repaso espaciado ----------
+const hoyStr = () => new Date().toLocaleDateString('en-CA');
+function retoInfo() {
+  const r = E.reto, h = hoyStr();
+  return { racha: L.reto.racha(r.dias, h), hecho: r.dias.includes(h), dom: L.reto.HECHOS.filter((k) => (r.est[k] || {}).caja >= 3).length, vistas: L.reto.HECHOS.filter((k) => r.est[k]).length };
+}
+function mapa() {
+  const filas = [2, 3, 4, 5, 6, 7, 8, 9, 10].map((a) => `<tr><th>×${a}</th>${Array.from({ length: 10 }, (_, i) => {
+    const h = E.reto.est[`${a}x${i + 1}`];
+    return `<td class="${h ? 'c' + h.caja : ''}" title="${a} × ${i + 1}"></td>`;
+  }).join('')}</tr>`).join('');
+  return `<div style="overflow-x:auto"><table class="mapa" aria-label="Mapa de tablas"><tr><th></th>${Array.from({ length: 10 }, (_, i) => `<th>${i + 1}</th>`).join('')}</tr>${filas}</table></div>
+    <div class="leyenda"><span style="--c:var(--track)">Nueva</span><span style="--c:var(--bad)">Falló</span><span style="--c:var(--star)">Aprendiendo</span><span style="--c:var(--ok)">¡Ya la sabe!</span></div>`;
+}
+
+function reto() {
+  const h = hoyStr(), cola = L.reto.elegirReto(E.reto.est, h).map((k) => ({ k, repaso: false }));
+  const R = { total: cola.length, n: 0, bien: 0, rapidas: 0, inicio: Date.now() };
+  const sig = () => {
+    if (R.fuera) return;
+    if (!cola.length) return retoFinal(R);
+    const q = cola.shift(), [a, b] = q.k.split('x').map(Number);
+    const falta = !q.repaso && Math.random() < 0.25, resp = falta ? b : a * b, t0 = Date.now();
+    if (!q.repaso) R.n++;
+    let val = '';
+    app.innerHTML = `
+      <button class="link" id="volver">← Salir</button>
+      <h1>⚡ Reto del día</h1>
+      <p>${q.repaso ? '🔁 <b>Otra vez la que fallaste.</b> ¡Tú puedes!' : `Pregunta ${R.n} de ${R.total}`}</p>
+      <div class="panel">
+        <div class="reto-q">${falta ? `${a} × ? = ${a * b}` : `${a} × ${b} = ?`}</div>
+        <div class="tiempo" aria-hidden="true"><i></i></div>
+        <div class="pantalla" id="pant" aria-live="polite"></div>
+        <div class="teclado" id="tec">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map((d) => `<button data-d="${d}">${d}</button>`).join('')}<button class="borra" data-d="x" aria-label="Borrar">⌫</button><button data-d="0">0</button><button class="listo" data-d="ok">Listo</button></div>
+        <div id="fb"></div>
+      </div>`;
+    $('#volver').onclick = () => { R.fuera = true; document.onkeydown = null; inicio(); };
+    const pinta = () => { $('#pant').textContent = val; };
+    let hecho = false;
+    const revisar = () => {
+      if (hecho || !val) return; hecho = true;
+      const ok = +val === resp, rapida = ok && Date.now() - t0 < 6000;
+      if (!q.repaso) {
+        E.reto.est[q.k] = L.reto.responder(E.reto.est[q.k], ok, h);
+        if (ok) { R.bien++; E.estrellas++; } if (rapida) R.rapidas++;
+        if (!ok) cola.push({ k: q.k, repaso: true });
+      }
+      guardar();
+      app.querySelectorAll('#tec button').forEach((x) => x.disabled = true);
+      $('#fb').innerHTML = ok
+        ? `<div class="fb ok"><b>${rapida ? '¡Rapidísimo! ⚡' : pick(BIEN)}</b> ${a} × ${b} = ${a * b}</div>`
+        : `<div class="fb mal"><b>${pick(CASI)}</b><p class="grande">${a} × ${b} = ${a * b}</p><p>${L.reto.truco(a, b)}</p></div>
+           <div class="acciones"><button class="btn" id="sig">Siguiente →</button></div>`;
+      if (ok) setTimeout(sig, 900); else { $('#sig').onclick = sig; $('#sig').focus(); }
+    };
+    $('#tec').onclick = (e) => {
+      const d = e.target.closest('button')?.dataset.d; if (!d || hecho) return;
+      if (d === 'ok') return revisar();
+      val = d === 'x' ? val.slice(0, -1) : (val + d).slice(0, 3); pinta();
+    };
+    document.onkeydown = (e) => {
+      if (!$('#tec') || hecho) return;
+      if (/^[0-9]$/.test(e.key)) { val = (val + e.key).slice(0, 3); pinta(); }
+      else if (e.key === 'Backspace') { val = val.slice(0, -1); pinta(); }
+      else if (e.key === 'Enter') revisar();
+    };
+  };
+  sig();
+}
+
+function retoFinal(R) {
+  document.onkeydown = null;
+  const h = hoyStr();
+  if (!E.reto.dias.includes(h)) E.reto.dias.push(h);
+  E.reto.hist.push({ fecha: new Date().toISOString(), bien: R.bien, de: R.total, rapidas: R.rapidas, seg: Math.round((Date.now() - R.inicio) / 1000) });
+  guardar();
+  const ri = retoInfo();
+  const msg = R.bien === R.total ? '¡PERFECTO! 🏆' : R.bien >= 8 ? '¡Excelente! Tu memoria está creciendo 🧠' : '¡Bien hecho por practicar! Mañana te salen mejor 💛';
+  app.innerHTML = `
+    <h1>⚡ Reto del día</h1>
+    <div class="panel" style="text-align:center">
+      <p class="grande">${R.bien} de ${R.total} a la primera</p>
+      <p>⚡ ${R.rapidas} rápidas · 🔥 racha de ${ri.racha} ${ri.racha === 1 ? 'día' : 'días'}</p>
+      <p><b>${msg}</b></p>
+      <h2>Tu mapa de tablas</h2><p>Practicaste <b>${ri.vistas} de 90</b> · ya te sabes <b>${ri.dom}</b>. Cada tabla se pone verde cuando la aciertas 3 días.</p>
+      ${mapa()}
+      <p>Las que fallaste te van a salir mañana otra vez. ¡Así se quedan en la memoria!</p>
+    </div>
+    <div class="acciones"><button class="btn" id="otra">Otra vuelta 🔁</button><button class="btn sec" id="inicio">Inicio 🏠</button></div>`;
+  if (R.bien >= 8) fiesta(R.bien === R.total ? 60 : 30);
+  $('#otra').onclick = reto; $('#inicio').onclick = inicio;
   scrollTo(0, 0);
 }
 
@@ -191,6 +302,14 @@ function papa() {
     <div class="panel">
       <p><b>Hoy:</b> ${deHoy.length} rondas, ${deHoy.reduce((s, h) => s + h.bien, 0)} aciertos, ${Math.round(deHoy.reduce((s, h) => s + h.seg, 0) / 60)} min.</p>
       <p><b>Avance general:</b> ${general()}% · <b>Estrellas:</b> ${E.estrellas}</p>
+      <h2>⚡ Reto de tablas</h2>
+      ${(() => { const ri = retoInfo(), fall = Object.entries(E.reto.est).filter(([, v]) => v.mal > 0).sort((x, y) => y[1].mal - x[1].mal).slice(0, 5);
+        const ult = E.reto.hist.slice(-5).reverse().map((r) => `<tr><td>${new Date(r.fecha).toLocaleDateString('es-GT')}</td><td>${r.bien}/${r.de}</td><td>⚡ ${r.rapidas}</td><td>${Math.max(1, Math.round(r.seg / 60))} min</td></tr>`).join('');
+        return `<p>🔥 Racha: <b>${ri.racha}</b> · Domina <b>${ri.dom} de 90</b> tablas · Retos hechos: <b>${E.reto.hist.length}</b></p>
+          ${fall.length ? `<p><b>Las que más se le olvidan:</b> ${fall.map(([k, v]) => `${k.replace('x', ' × ')} (${v.mal})`).join(' · ')}</p>` : ''}
+          ${mapa()}
+          ${ult ? `<table class="papa"><tr><th>Día</th><th>A la primera</th><th>Rápidas</th><th>Tiempo</th></tr>${ult}</table>` : ''}`; })()}
+      <h2>Temas</h2>
       <table class="papa"><tr><th>Tema</th><th>Avance</th></tr>${L.TEMAS.map((t) => `<tr><td>${t.emoji} ${t.nombre}</td><td>${avance(t.id)}%</td></tr>`).join('')}</table>
       <h2>Historial</h2>
       ${filas ? `<table class="papa"><tr><th>Cuándo</th><th>Tema</th><th>Aciertos</th><th>Tiempo</th></tr>${filas}</table>` : '<p>Todavía no hay rondas.</p>'}
@@ -201,7 +320,7 @@ function papa() {
   $('#volver').onclick = inicio;
   $('#borrar').onclick = () => { $('#seguro').hidden = false; };
   $('#no').onclick = () => { $('#seguro').hidden = true; };
-  $('#si').onclick = () => { E = { temas: {}, estrellas: 0, historial: [] }; guardar(); papa(); };
+  $('#si').onclick = () => { E = { temas: {}, estrellas: 0, historial: [], reto: { est: {}, dias: [], hist: [] } }; guardar(); papa(); };
 }
 
 inicio();

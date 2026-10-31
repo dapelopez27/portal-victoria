@@ -284,6 +284,47 @@
   ];
   TEMAS.forEach((t) => { t.gen = GEN[t.id]; });
 
-  const L = { TEMAS, letras, romano, opciones };
+  // ---------- Reto de tablas: repaso espaciado (cajas de Leitner) ----------
+  // Cada tabla (ej. "7x8") vive en una caja 0..5. Acierto: sube de caja y vuelve en más días.
+  // Fallo: regresa a la caja 0 y vuelve mañana (y otra vez al final del reto de hoy).
+  const ORDEN_TABLAS = [2, 5, 3, 10, 4, 6, 9, 7, 8];
+  const HECHOS = ORDEN_TABLAS.flatMap((a) => Array.from({ length: 10 }, (_, i) => `${a}x${i + 1}`));
+  const INTERVALO = [1, 1, 2, 4, 7, 14];
+  const sumarDias = (f, d) => { const t = new Date(f + 'T12:00:00'); t.setDate(t.getDate() + d); return t.toISOString().slice(0, 10); };
+  function elegirReto(est, hoy, n = 10) {
+    // tablas nuevas: al menos 4, o las que falten para llenar el reto
+    const vencidos = HECHOS.filter((k) => est[k] && est[k].prox <= hoy).sort((x, y) => est[x].caja - est[y].caja || (est[x].prox < est[y].prox ? -1 : 1));
+    const lista = vencidos.slice(0, n), nuevosMax = Math.max(4, n - lista.length);
+    for (const k of HECHOS) { if (lista.length >= n || lista.filter((x) => !est[x]).length >= nuevosMax) break; if (!est[k]) lista.push(k); }
+    // si no alcanza, repaso extra de las que menos sabe
+    const resto = shuffle(HECHOS.filter((k) => est[k] && !lista.includes(k))).sort((x, y) => est[x].caja - est[y].caja);
+    while (lista.length < n && resto.length) lista.push(resto.shift());
+    return shuffle(lista);
+  }
+  function responder(h, ok, hoy) {
+    h = h ? { ...h } : { caja: 0, bien: 0, mal: 0 };
+    if (ok) { h.caja = Math.min(5, h.caja + 1); h.bien++; } else { h.caja = 0; h.mal++; }
+    h.prox = sumarDias(hoy, INTERVALO[h.caja]);
+    return h;
+  }
+  function racha(dias, hoy) {
+    const s = new Set(dias); let d = s.has(hoy) ? hoy : sumarDias(hoy, -1), n = 0;
+    while (s.has(d)) { n++; d = sumarDias(d, -1); }
+    return n;
+  }
+  function truco(a, b) {
+    const seq = Array.from({ length: b }, (_, i) => a * (i + 1)).join(', ');
+    let t;
+    if (a === 1 || b === 1) t = 'Cualquier número por 1 es el mismo número.';
+    else if (a === 10 || b === 10) t = 'Por 10: le pones un <b>0</b> al final.';
+    else if (a === 9 || b === 9) { const o = a === 9 ? b : a, p = 9 * o; t = `Truco del 9: empieza con uno menos (${o - 1}) y las dos cifras suman 9 (${Math.floor(p / 10)} + ${p % 10} = 9) → <b>${p}</b>.`; }
+    else if (a === 5 || b === 5) t = 'Por 5: cuenta de 5 en 5. Siempre termina en 0 o en 5.';
+    else if (a === 2 || b === 2) { const o = a === 2 ? b : a; t = `Por 2 es el doble: ${o} + ${o} = <b>${2 * o}</b>.`; }
+    else if (a === 4 || b === 4) { const o = a === 4 ? b : a; t = `Por 4 es el doble del doble: ${o} → ${2 * o} → <b>${4 * o}</b>.`; }
+    else t = `Recuerda que ${a} × ${b} es lo mismo que ${b} × ${a}.`;
+    return `${t}<br>Cuenta de ${a} en ${a}: ${seq}.`;
+  }
+
+  const L = { TEMAS, letras, romano, opciones, reto: { HECHOS, elegirReto, responder, racha, truco, sumarDias } };
   if (typeof module !== 'undefined') module.exports = L; else window.L = L;
 })();
