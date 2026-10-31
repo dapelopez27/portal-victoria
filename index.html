@@ -79,6 +79,7 @@
   .mapa td.c0 { background:var(--bad); } .mapa td.c1, .mapa td.c2 { background:var(--star); } .mapa td.c3, .mapa td.c4 { background:var(--okbg); outline:2px solid var(--ok); } .mapa td.c5 { background:var(--ok); }
   .leyenda { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; font-size:14px; color:var(--muted); }
   .leyenda span::before { content:""; display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:4px; vertical-align:-1px; background:var(--c); }
+  .nota { font-size:14px; color:var(--muted); }
   .link { background:none; color:var(--muted); text-decoration:underline; padding:4px; font-size:15px; }
   @media (max-width:480px) { body { font-size:17px; } .grande { font-size:26px; } h1 { font-size:26px; } }
 </style>
@@ -99,7 +100,9 @@ function cargar() { try { return JSON.parse(localStorage.getItem(CLAVE)) || null
 let E = cargar() || { temas: {}, estrellas: 0, historial: [] };
 E.reto = E.reto || { est: {}, dias: [], hist: [] };
 E.examenes = E.examenes || [];
-function guardar() { try { localStorage.setItem(CLAVE, JSON.stringify(E)); } catch {} }
+let GUARDA = true;
+function guardar() { try { localStorage.setItem(CLAVE, JSON.stringify(E)); GUARDA = true; } catch { GUARDA = false; } }
+try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch {}
 const avance = (id) => Math.min(100, ((E.temas[id] || {}).mejor || 0) * 10);
 const general = () => Math.round(L.TEMAS.reduce((s, t) => s + avance(t.id), 0) / L.TEMAS.length);
 
@@ -130,7 +133,8 @@ function inicio() {
     <button class="reto-card examen-card" id="examen"><span><b>📝 Modo examen</b><br>15 preguntas sin ayuda, como en el colegio · calificación al final</span><span class="racha">${E.examenes.length ? `${Math.max(...E.examenes.map((x) => x.nota))}/15` : '¡Pruébalo!'}</span></button>
     <h2>🔢 Matemáticas</h2><div class="grid">${L.TEMAS.filter((t) => t.materia === 'mate').map(tarjeta).join('')}</div>
     <h2>📖 Comunicación y Lenguaje</h2><div class="grid">${L.TEMAS.filter((t) => t.materia === 'leng').map(tarjeta).join('')}</div>
-    <p style="margin-top:30px"><button class="link" id="papa">Para papá y mamá</button></p>`;
+    <p style="margin-top:30px"><button class="link" id="papa">Para papá y mamá</button></p>
+    <p class="nota">${GUARDA ? '✓ Tu avance se guarda solo en este aparato.' : '⚠️ Este navegador no está guardando el avance. Revisa que no esté en modo privado.'}</p>`;
   app.querySelectorAll('.tema').forEach((b) => b.onclick = () => aprende(L.TEMAS.find((t) => t.id === b.dataset.id)));
   $('#papa').onclick = papa; $('#reto').onclick = reto; $('#examen').onclick = examenes;
   scrollTo(0, 0);
@@ -318,7 +322,15 @@ function aprende(t) {
 }
 
 function practica(t) {
-  const R = { t, i: 0, bien: 0, marcas: [], inicio: Date.now() };
+  const d = E.temas[t.id] || (E.temas[t.id] = { mejor: 0 });
+  const R = { t, i: 0, bien: 0, marcas: [], inicio: Date.now(), antes: d.mejor, fila: null };
+  // cada respuesta se guarda al momento: si sale a medias, no pierde nada
+  const anota = () => {
+    d.mejor = Math.max(d.mejor, R.bien);
+    if (!R.fila) E.historial.push(R.fila = { fecha: new Date().toISOString(), tema: t.id });
+    Object.assign(R.fila, { bien: R.bien, de: R.i, seg: Math.round((Date.now() - R.inicio) / 1000) });
+    guardar();
+  };
   const siguiente = () => {
     if (R.i === RONDA) return final(R);
     const q = t.gen();
@@ -336,13 +348,13 @@ function practica(t) {
     const revisar = (dada, boton) => {
       const ok = dada.trim().toLowerCase() === q.respuesta.toLowerCase();
       R.marcas[R.i] = ok ? 'ok' : 'mal';
-      if (ok) { R.bien++; E.estrellas++; guardar(); }
+      if (ok) { R.bien++; E.estrellas++; }
       app.querySelectorAll('.op').forEach((b) => { b.disabled = true; if (b.textContent === q.respuesta) b.classList.add('ok'); });
       if (boton && !ok) boton.classList.add('mal');
       const inp = $('#n'); if (inp) inp.disabled = true;
       $('#fb').innerHTML = `<div class="fb ${ok ? 'ok' : 'mal'}"><b>${ok ? pick(BIEN) : pick(CASI)}</b>${ok ? '' : `<p>La respuesta es <b>${q.respuesta}</b>.</p>`}<p>${q.explica}</p></div>
         <div class="acciones"><button class="btn" id="sig">${R.i + 1 === RONDA ? 'Ver mi resultado 🏁' : 'Siguiente →'}</button></div>`;
-      R.i++; $('#sig').onclick = siguiente; $('#sig').focus();
+      R.i++; anota(); $('#sig').onclick = siguiente; $('#sig').focus();
     };
     app.querySelectorAll('.op').forEach((b) => b.onclick = () => revisar(b.textContent, b));
     const f = $('#f'); if (f) { $('#n').focus(); f.onsubmit = (e) => { e.preventDefault(); if ($('#n').value.trim()) revisar($('#n').value); }; }
@@ -351,10 +363,7 @@ function practica(t) {
 }
 
 function final(R) {
-  const { t, bien } = R, d = E.temas[t.id] || (E.temas[t.id] = { mejor: 0 });
-  const nuevo = bien > d.mejor; d.mejor = Math.max(d.mejor, bien);
-  E.historial.push({ fecha: new Date().toISOString(), tema: t.id, bien, de: RONDA, seg: Math.round((Date.now() - R.inicio) / 1000) });
-  guardar();
+  const { t, bien } = R, nuevo = bien > R.antes;
   const msg = bien === RONDA ? '¡PERFECTO! Eres una campeona 🏆' : bien >= 8 ? '¡Muy bien! Ya casi lo dominas 🌟' : bien >= 5 ? '¡Vas mejorando! Una ronda más y lo logras 💪' : 'Cada intento te hace más fuerte. ¡Otra vez! 💛';
   app.innerHTML = `
     <h1>${t.emoji} ${t.nombre}</h1>
@@ -404,6 +413,7 @@ function papa() {
   $('#si').onclick = () => { E = { temas: {}, estrellas: 0, historial: [], reto: { est: {}, dias: [], hist: [] }, examenes: [] }; guardar(); papa(); };
 }
 
+guardar(); // revisa si este navegador sí guarda
 inicio();
 </script>
 </body>
