@@ -325,6 +325,37 @@
     return `${t}<br>Cuenta de ${a} en ${a}: ${seq}.`;
   }
 
-  const L = { TEMAS, letras, romano, opciones, reto: { HECHOS, elegirReto, responder, racha, truco, sumarDias } };
+  // ---------- Modo examen ----------
+  // Una pregunta "doble" pide la operación (opciones) y el número; vale punto solo si ambas están bien.
+  const op = (t) => OPS[t];
+  const EXAMEN_1 = { id: 'hoja1', nombre: 'Examen 1: División, problemas y romanos', series: [
+    { nombre: 'Serie I: La división', tema: 'division', preguntas: [
+      { texto: '<span class="grande">18 ÷ 3 = ?</span>', respuesta: '6', explica: '3 × 6 = 18' },
+      { texto: '<span class="grande">35 ÷ 5 = ?</span>', respuesta: '7', explica: '5 × 7 = 35' },
+      { texto: '<span class="grande">48 ÷ 6 = ?</span>', respuesta: '8', explica: '6 × 8 = 48' },
+      { texto: '<span class="grande">24 ÷ 4 = 6</span><br>¿Cómo se llama el número <b>4</b>?', opciones: ['dividendo', 'divisor', 'cociente', 'residuo'], respuesta: 'divisor', explica: '24 es el dividendo, 4 el divisor (entre cuántos) y 6 el cociente.' },
+      { texto: 'Reparte <b>17 dulces</b> entre <b>5 niños</b> por igual. Le tocan 3 a cada uno.<br>¿Cuántos <b>sobran</b>?', respuesta: '2', explica: '5 × 3 = 15, y de 15 a 17 sobran 2: el residuo es 2.' }] },
+    { nombre: 'Serie II: ¿Qué operación?', tema: 'problemas', preguntas: [
+      { texto: 'Ana tiene 9 crayones rojos y 7 azules. ¿Cuántos crayones tiene <b>en total</b>?', opciones: Object.values(OPS), respuesta: op('suma'), numero: '16', explica: '“En total” es suma: 9 + 7 = 16 crayones.' },
+      { texto: 'Había 30 globos y se reventaron 12. ¿Cuántos globos <b>quedan</b>?', opciones: Object.values(OPS), respuesta: op('resta'), numero: '18', explica: '“Quedan” es resta: 30 − 12 = 18 globos.' },
+      { texto: 'Hay 5 cajas con 8 galletas <b>cada una</b>. ¿Cuántas galletas hay en total?', opciones: Object.values(OPS), respuesta: op('mult'), numero: '40', explica: '“Cada una” y se repite: 5 × 8 = 40 galletas.' },
+      { texto: 'Mamá reparte 42 canicas entre 6 niños, <b>igual a cada uno</b>. ¿Cuántas le tocan a cada niño?', opciones: Object.values(OPS), respuesta: op('div'), numero: '7', explica: 'Repartir igual es división: 42 ÷ 6 = 7 canicas.' },
+      { texto: 'Fernando quiere guardar 63 hojas en 7 fólderes, <b>igual en cada uno</b>. ¿Cuántas hojas van en cada fólder?', opciones: Object.values(OPS), respuesta: op('div'), numero: '9', explica: 'Repartir igual es división: 63 ÷ 7 = 9 hojas.' }] },
+    { nombre: 'Serie III: Números romanos', tema: 'romanos', preguntas: [
+      { texto: '¿Cuánto vale <span class="grande">XIV</span>?', respuesta: '14', explica: explicaRomano(14) },
+      { texto: '¿Cuánto vale <span class="grande">XXXVI</span>?', respuesta: '36', explica: explicaRomano(36) },
+      { texto: '¿Cuánto vale <span class="grande">XLIX</span>?', respuesta: '49', explica: explicaRomano(49) },
+      { texto: '¿Cómo se escribe <span class="grande">19</span> en romanos?', opciones: ['XIX', 'IXX', 'XVIIII', 'XXI'], respuesta: 'XIX', explica: explicaRomano(19) },
+      { texto: '¿Cómo se escribe <span class="grande">53</span> en romanos?', opciones: ['LIII', 'LIIV', 'XLIII', 'LXIII'], respuesta: 'LIII', explica: explicaRomano(53) }] },
+  ] };
+  const NOMBRE_TEMA = Object.fromEntries(TEMAS.map((t) => [t.id, t.nombre]));
+  const ROMANOS_SERIE = ['I', 'II', 'III'];
+  function examenSorpresa() {
+    const ids = shuffle(['division', 'problemas', 'romanos', 'ordinales', 'equivalencias', 'columnas', 'fracciones', 'multiplicacion', 'letras', 'sujeto', 'tildes', 'signos']).slice(0, 3);
+    return { id: 'sorpresa', nombre: 'Examen sorpresa', series: ids.map((id, i) => ({ nombre: `Serie ${ROMANOS_SERIE[i]}: ${NOMBRE_TEMA[id]}`, tema: id, preguntas: Array.from({ length: 5 }, () => GEN[id]()) })) };
+  }
+  const notaMensaje = (n, de) => n >= de - 2 ? '⭐⭐⭐ ¡Campeona!' : n >= de - 5 ? '⭐⭐ ¡Muy bien!' : '⭐ ¡Repasa los videos y vuelve a intentarlo!';
+
+  const L = { TEMAS, letras, romano, opciones, examenes: { EXAMEN_1, examenSorpresa, notaMensaje }, reto: { HECHOS, elegirReto, responder, racha, truco, sumarDias } };
   if (typeof module !== 'undefined') module.exports = L; else window.L = L;
 })();

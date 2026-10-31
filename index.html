@@ -62,6 +62,10 @@
   .papa { border-collapse:collapse; width:100%; }
   .reto-card { display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; width:100%; text-align:left; margin-top:16px; background:var(--card); border:3px solid var(--star); border-radius:22px; padding:16px 18px; }
   .reto-card b { font-size:22px; } .reto-card .racha { font-size:28px; font-weight:900; white-space:nowrap; }
+  .examen-card { border-color:var(--mate); margin-top:10px; }
+  .op.sel { border-color:var(--mate); background:var(--suj); }
+  .puntos .r { background:var(--mate); }
+  .revision { border-top:2px solid var(--line); padding-top:12px; margin-top:12px; }
   .reto-q { font-size:64px; font-weight:900; text-align:center; font-variant-numeric:tabular-nums; margin:6px 0; }
   .pantalla { font-size:48px; font-weight:900; text-align:center; min-height:72px; border:3px solid var(--line); border-radius:16px; background:var(--card); font-variant-numeric:tabular-nums; }
   .teclado { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:12px; max-width:420px; margin-inline:auto; }
@@ -94,6 +98,7 @@ const pick = (a) => a[Math.floor(Math.random() * a.length)];
 function cargar() { try { return JSON.parse(localStorage.getItem(CLAVE)) || null; } catch { return null; } }
 let E = cargar() || { temas: {}, estrellas: 0, historial: [] };
 E.reto = E.reto || { est: {}, dias: [], hist: [] };
+E.examenes = E.examenes || [];
 function guardar() { try { localStorage.setItem(CLAVE, JSON.stringify(E)); } catch {} }
 const avance = (id) => Math.min(100, ((E.temas[id] || {}).mejor || 0) * 10);
 const general = () => Math.round(L.TEMAS.reduce((s, t) => s + avance(t.id), 0) / L.TEMAS.length);
@@ -122,11 +127,12 @@ function inicio() {
     <p>Llevas <b>${g}%</b> del camino para tu examen de 3ro primaria.</p>
     <div class="barra"><i style="width:${g}%"></i></div>
     <button class="reto-card" id="reto"><span><b>⚡ Reto del día: tablas</b><br>${ri.hecho ? 'Hecho hoy ✅ ¿Otra vuelta?' : '10 tablas · unos 3 minutos'} · ${ri.vistas} de 90 practicadas</span><span class="racha">🔥 ${ri.racha} ${ri.racha === 1 ? 'día' : 'días'}</span></button>
+    <button class="reto-card examen-card" id="examen"><span><b>📝 Modo examen</b><br>15 preguntas sin ayuda, como en el colegio · calificación al final</span><span class="racha">${E.examenes.length ? `${Math.max(...E.examenes.map((x) => x.nota))}/15` : '¡Pruébalo!'}</span></button>
     <h2>🔢 Matemáticas</h2><div class="grid">${L.TEMAS.filter((t) => t.materia === 'mate').map(tarjeta).join('')}</div>
     <h2>📖 Comunicación y Lenguaje</h2><div class="grid">${L.TEMAS.filter((t) => t.materia === 'leng').map(tarjeta).join('')}</div>
     <p style="margin-top:30px"><button class="link" id="papa">Para papá y mamá</button></p>`;
   app.querySelectorAll('.tema').forEach((b) => b.onclick = () => aprende(L.TEMAS.find((t) => t.id === b.dataset.id)));
-  $('#papa').onclick = papa; $('#reto').onclick = reto;
+  $('#papa').onclick = papa; $('#reto').onclick = reto; $('#examen').onclick = examenes;
   scrollTo(0, 0);
 }
 
@@ -224,6 +230,79 @@ function retoFinal(R) {
   scrollTo(0, 0);
 }
 
+// ---------- Modo examen ----------
+function examenes() {
+  const mejor = (id) => { const xs = E.examenes.filter((x) => x.id === id); return xs.length ? `Mejor nota: ${Math.max(...xs.map((x) => x.nota))}/15` : 'Todavía no lo haces'; };
+  app.innerHTML = `
+    <button class="link" id="volver">← Volver</button>
+    <h1>📝 Modo examen</h1>
+    <p>Como en el colegio: <b>no hay ayuda</b> hasta el final. Lee despacio y piensa en tu mente antes de responder.</p>
+    <div class="grid">
+      <button class="tema" id="ex1"><span class="e">📄</span><b>${L.examenes.EXAMEN_1.nombre}</b><small>La misma de la hoja impresa · ${mejor('hoja1')}</small></button>
+      <button class="tema" id="exs"><span class="e">🎲</span><b>Examen sorpresa</b><small>3 temas al azar, siempre distinto · ${mejor('sorpresa')}</small></button>
+    </div>`;
+  $('#volver').onclick = inicio;
+  $('#ex1').onclick = () => examen(L.examenes.EXAMEN_1);
+  $('#exs').onclick = () => examen(L.examenes.examenSorpresa());
+  scrollTo(0, 0);
+}
+
+function examen(ex) {
+  const lista = ex.series.flatMap((s, si) => s.preguntas.map((q) => ({ ...q, si })));
+  const R = { ex, lista, resp: [], inicio: Date.now() };
+  const mostrar = (i) => {
+    if (i === lista.length) return examenFinal(R);
+    const q = lista[i];
+    let sel = null;
+    app.innerHTML = `
+      <button class="link" id="volver">← Salir del examen</button>
+      <h1>📝 ${ex.series[q.si].nombre}</h1>
+      <p>Pregunta ${i + 1} de ${lista.length}</p>
+      <div class="puntos">${lista.map((_, k) => `<span class="${k < i ? 'r' : k === i ? 'ya' : ''}"></span>`).join('')}</div>
+      <div class="panel">
+        <div>${q.texto}</div>
+        ${q.opciones ? `${q.numero ? '<p><b>1. ¿Qué operación es?</b></p>' : ''}${q.opciones.map((o) => `<button class="op">${o}</button>`).join('')}` : ''}
+        ${!q.opciones || q.numero ? `${q.numero ? '<p><b>2. ¿Cuál es la respuesta?</b></p>' : ''}<input class="num" id="n" inputmode="numeric" autocomplete="off" aria-label="Tu respuesta">` : ''}
+        <div class="acciones"><button class="btn" id="sig" disabled>${i + 1 === lista.length ? 'Terminar examen 🏁' : 'Siguiente →'}</button></div>
+      </div>`;
+    $('#volver').onclick = examenes;
+    const n = $('#n');
+    const listo = () => { $('#sig').disabled = !((!q.opciones || sel) && (!n || n.value.trim())); };
+    app.querySelectorAll('.op').forEach((b) => b.onclick = () => { app.querySelectorAll('.op').forEach((x) => x.classList.remove('sel')); b.classList.add('sel'); sel = b.textContent; listo(); });
+    if (n) { n.oninput = listo; n.onkeydown = (e) => { if (e.key === 'Enter' && !$('#sig').disabled) $('#sig').click(); }; if (!q.opciones) n.focus(); }
+    $('#sig').onclick = () => {
+      const num = n ? n.value.trim() : '';
+      const ok = q.opciones ? sel === q.respuesta && (!q.numero || +num === +q.numero) : num.toLowerCase() === q.respuesta.toLowerCase();
+      R.resp.push({ ok, dada: [sel, num].filter(Boolean).join(' · ') });
+      mostrar(i + 1);
+    };
+    scrollTo(0, 0);
+  };
+  mostrar(0);
+}
+
+function examenFinal(R) {
+  const { ex, lista, resp } = R, nota = resp.filter((r) => r.ok).length;
+  const series = ex.series.map((s, si) => ({ nombre: s.nombre, tema: s.tema, bien: resp.filter((r, k) => lista[k].si === si && r.ok).length, de: s.preguntas.length }));
+  E.examenes.push({ fecha: new Date().toISOString(), id: ex.id, nombre: ex.nombre, nota, de: lista.length, series: series.map((s) => `${s.nombre.split(':')[0]}: ${s.bien}/${s.de}`), seg: Math.round((Date.now() - R.inicio) / 1000) });
+  E.estrellas += nota; guardar();
+  const malas = lista.map((q, k) => ({ q, r: resp[k] })).filter((x) => !x.r.ok);
+  app.innerHTML = `
+    <h1>📝 ${ex.nombre}</h1>
+    <div class="panel" style="text-align:center">
+      <p class="grande">${nota} de ${lista.length}</p>
+      <p style="font-size:24px"><b>${L.examenes.notaMensaje(nota, lista.length)}</b></p>
+      <p>Ganaste ⭐ ${nota} estrellas.</p>
+      <table class="papa">${series.map((s) => `<tr><td>${s.nombre}</td><td>${s.bien}/${s.de}</td><td>${s.bien < 4 ? `<button class="link" data-t="${s.tema}">Repasar este tema</button>` : '✅'}</td></tr>`).join('')}</table>
+    </div>
+    ${malas.length ? `<h2>Vamos a ver las que fallaste 👀</h2><div class="panel">${malas.map(({ q, r }) => `<div class="revision"><div>${q.texto}</div><p>Tu respuesta: <b>${r.dada || '—'}</b> · Correcta: <b>${q.respuesta}${q.numero ? ' · ' + q.numero : ''}</b></p><p>${q.explica}</p></div>`).join('')}</div>` : ''}
+    <div class="acciones"><button class="btn" id="otro">Otro examen 📝</button><button class="btn sec" id="inicio">Inicio 🏠</button></div>`;
+  if (nota >= lista.length - 2) fiesta(60); else if (nota >= lista.length - 5) fiesta(30);
+  app.querySelectorAll('[data-t]').forEach((b) => b.onclick = () => aprende(L.TEMAS.find((t) => t.id === b.dataset.t)));
+  $('#otro').onclick = examenes; $('#inicio').onclick = inicio;
+  scrollTo(0, 0);
+}
+
 function aprende(t) {
   app.innerHTML = `
     <button class="link" id="volver">← Volver</button>
@@ -309,6 +388,8 @@ function papa() {
           ${fall.length ? `<p><b>Las que más se le olvidan:</b> ${fall.map(([k, v]) => `${k.replace('x', ' × ')} (${v.mal})`).join(' · ')}</p>` : ''}
           ${mapa()}
           ${ult ? `<table class="papa"><tr><th>Día</th><th>A la primera</th><th>Rápidas</th><th>Tiempo</th></tr>${ult}</table>` : ''}`; })()}
+      <h2>📝 Exámenes</h2>
+      ${E.examenes.length ? `<table class="papa"><tr><th>Día</th><th>Examen</th><th>Nota</th><th>Por serie</th></tr>${E.examenes.slice().reverse().map((x) => `<tr><td>${new Date(x.fecha).toLocaleDateString('es-GT')}</td><td>${x.nombre}</td><td><b>${x.nota}/${x.de}</b></td><td>${x.series.join(' · ')}</td></tr>`).join('')}</table>` : '<p>Todavía no hace exámenes.</p>'}
       <h2>Temas</h2>
       <table class="papa"><tr><th>Tema</th><th>Avance</th></tr>${L.TEMAS.map((t) => `<tr><td>${t.emoji} ${t.nombre}</td><td>${avance(t.id)}%</td></tr>`).join('')}</table>
       <h2>Historial</h2>
@@ -320,7 +401,7 @@ function papa() {
   $('#volver').onclick = inicio;
   $('#borrar').onclick = () => { $('#seguro').hidden = false; };
   $('#no').onclick = () => { $('#seguro').hidden = true; };
-  $('#si').onclick = () => { E = { temas: {}, estrellas: 0, historial: [], reto: { est: {}, dias: [], hist: [] } }; guardar(); papa(); };
+  $('#si').onclick = () => { E = { temas: {}, estrellas: 0, historial: [], reto: { est: {}, dias: [], hist: [] }, examenes: [] }; guardar(); papa(); };
 }
 
 inicio();
