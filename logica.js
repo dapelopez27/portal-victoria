@@ -163,6 +163,41 @@
         explica: `${b} × ${qq} = ${b * qq}. De ${aa} quito ${b * qq}: ${aa} − ${b * qq} = <b>${rr}</b>. Eso que sobra es el <b>residuo</b>.` };
     },
     problemas: problema,
+    // Sumas y restas en la mente: cada pregunta trae su método (sin contar con los dedos)
+    mental() {
+      const k = pick(['diez', 'diez', 'dobles', 'nueve', 'decenas', 'decenas', 'llevando', 'resta']);
+      const sinDedos = '<br><small>🧠 ¡Sin dedos! Usa el método de la pista.</small>';
+      if (k === 'diez') {
+        const a = rnd(6, 9), b = rnd(11 - a, 9), falta = 10 - a, resto = b - falta;
+        return { texto: `<span class="grande">${a} + ${b} = ?</span>${sinDedos}`, respuesta: String(a + b),
+          pista: `<b>Completa el 10:</b> ¿cuánto le falta al ${a} para llegar a 10? Tómalo del ${b}.`,
+          explica: `<b>Completa el 10:</b> al ${a} le faltan <b>${falta}</b> para 10.<br>Le quito ${falta} al ${b} y me queda${resto === 1 ? '' : 'n'} <b>${resto}</b>.<br>10 + ${resto} = <b>${a + b}</b>` };
+      }
+      if (k === 'dobles') {
+        const a = rnd(3, 9), mas = pick([0, 1, 1]), b = a + mas;
+        return { texto: `<span class="grande">${a} + ${b} = ?</span>${sinDedos}`, respuesta: String(a + b),
+          pista: `<b>Usa los dobles:</b> ¿cuánto es ${a} + ${a}?${mas ? ' Luego súmale 1.' : ''}`,
+          explica: `<b>Dobles:</b> ${a} + ${a} = ${2 * a}.${mas ? `<br>Como ${b} es uno más que ${a}: ${2 * a} + 1 = <b>${a + b}</b>` : ` Respuesta: <b>${a + b}</b>`}` };
+      }
+      if (k === 'nueve') {
+        const a = rnd(12, 79);
+        return { texto: `<span class="grande">${a} + 9 = ?</span>${sinDedos}`, respuesta: String(a + 9),
+          pista: '<b>Truco del 9:</b> sumar 9 es como sumar 10 y quitar 1.',
+          explica: `<b>Truco del 9:</b> ${a} + 10 = ${a + 10}.<br>Le quito 1: ${a + 10} − 1 = <b>${a + 9}</b>` };
+      }
+      if (k === 'decenas' || k === 'llevando') {
+        let a, b; do { a = rnd(12, 68); b = rnd(11, 29); } while ((k === 'llevando') !== (a % 10 + b % 10 >= 10));
+        const d = Math.floor(a / 10) * 10 + Math.floor(b / 10) * 10, u = a % 10 + b % 10;
+        return { texto: `<span class="grande">${a} + ${b} = ?</span>${sinDedos}`, respuesta: String(a + b),
+          pista: '<b>Separa decenas y unidades:</b> suma primero las decenas (los de 10 en 10) y luego las unidades.',
+          explica: `<b>Separa:</b> ${a} = ${a - a % 10} + ${a % 10} y ${b} = ${b - b % 10} + ${b % 10}.<br>Decenas: ${a - a % 10} + ${b - b % 10} = <b>${d}</b>. Unidades: ${a % 10} + ${b % 10} = <b>${u}</b>.<br>Junto: ${d} + ${u} = <b>${a + b}</b>` };
+      }
+      let a, b; do { a = rnd(21, 89); b = rnd(3, 9); } while (a % 10 >= b || a % 10 === 0);
+      const baja = a % 10, falta = b - baja, decena = a - baja;
+      return { texto: `<span class="grande">${a} − ${b} = ?</span>${sinDedos}`, respuesta: String(a - b),
+        pista: `<b>Baja a la decena:</b> primero quita lo necesario para llegar a ${decena}, después quita lo que falta.`,
+        explica: `<b>Baja a la decena:</b> ${a} − ${baja} = ${decena}.<br>Me faltan quitar ${b} − ${baja} = ${falta}.<br>${decena} − ${falta} = <b>${a - b}</b>` };
+    },
     romanos() {
       const n = Math.random() < 0.7 ? rnd(1, 60) : rnd(61, 100), k = rnd(1, 3);
       const cerca = [n + 1, n - 1, n + 10, n - 10, n + 5, n - 5].filter((x) => x >= 1 && x <= 100);
@@ -257,6 +292,14 @@
   const TEMAS = [
     { id: 'division', materia: 'mate', nombre: 'La división', emoji: '🍬', urge: true, video: 'videos/division.mp4',
       aprende: `<p><b>Dividir es repartir en partes iguales.</b></p><p>🍬🍬🍬🍬🍬🍬🍬🍬🍬🍬🍬🍬 12 dulces entre 3 niños → a cada uno le tocan <b>4</b>.</p><p class="grande">12 ÷ 3 = 4</p><table class="tabla"><tr><td><b>12</b></td><td>dividendo</td><td>lo que reparto</td></tr><tr><td><b>3</b></td><td>divisor</td><td>entre cuántos</td></tr><tr><td><b>4</b></td><td>cociente</td><td>cuánto le toca a cada uno</td></tr><tr><td><b>?</b></td><td>residuo</td><td>lo que sobra</td></tr></table><p><b>Truco:</b> usa la tabla de multiplicar. Para 12 ÷ 3 me pregunto: ¿3 × cuánto da 12? → 3 × 4 = 12 → la respuesta es 4.</p><p><b>Cuando sobra:</b> 14 ÷ 3 → 3 × 4 = 12, y de 14 a 12 sobran 2 → residuo 2.</p>` },
+    { id: 'mental', materia: 'mate', nombre: 'Sumas en la mente (sin dedos)', emoji: '🧠', urge: true,
+      aprende: `<p>Los dedos sirven al principio, pero son lentos y se confunden. Estos <b>trucos</b> son más rápidos y se hacen en la mente:</p>
+        <table class="tabla"><tr><td>🔟 <b>Completa el 10</b></td><td>8 + 5 → al 8 le faltan 2 para 10. Le quito 2 al 5 y quedan 3 → 10 + 3 = <b>13</b></td></tr>
+        <tr><td>👯 <b>Dobles</b></td><td>6 + 7 → 6 + 6 = 12, y uno más = <b>13</b></td></tr>
+        <tr><td>9️⃣ <b>Truco del 9</b></td><td>27 + 9 → 27 + 10 = 37, quito 1 = <b>36</b></td></tr>
+        <tr><td>✂️ <b>Separa</b></td><td>34 + 25 → 30 + 20 = 50 y 4 + 5 = 9 → <b>59</b></td></tr>
+        <tr><td>⬇️ <b>Baja a la decena</b></td><td>42 − 7 → 42 − 2 = 40, me falta quitar 5 → <b>35</b></td></tr></table>
+        <p>Cuando no sepas, toca <b>💡 Pista</b> y te dice qué truco usar.</p>` },
     { id: 'problemas', materia: 'mate', nombre: 'Problemas: ¿qué operación?', emoji: '🧩', urge: true, video: 'videos/problemas.mp4',
       aprende: `<p>Antes de hacer cuentas, <b>lee el problema dos veces</b> y busca las palabras pista:</p><table class="tabla"><tr><td>➕ Suma</td><td>“en total”, “juntos”, “entre todos tienen”</td></tr><tr><td>➖ Resta</td><td>“le quedan”, “regaló”, “perdió”, “se bajaron”</td></tr><tr><td>✖️ Multiplicación</td><td>“cada uno tiene ___” y se repite: 4 gallinas con 6 huevos <i>cada una</i></td></tr><tr><td>➗ División</td><td>“repartir”, “igual en cada uno”: 81 hojas en 9 fólderes</td></tr></table><p>Ejemplo: <i>Fernando quiere guardar 81 hojas en 9 fólderes.</i> Es repartir → 81 ÷ 9 = <b>9</b> hojas en cada fólder.</p><p><b>Siempre escribe:</b> operación ✍️ y respuesta con palabras: “Debe colocar 9 hojas en cada fólder”.</p>` },
     { id: 'romanos', materia: 'mate', nombre: 'Números romanos', emoji: '🏛️', urge: true, video: 'videos/romanos.mp4',
@@ -282,7 +325,23 @@
     { id: 'aumentativos', materia: 'leng', nombre: 'Aumentativos', emoji: '🐘',
       aprende: `<p>El aumentativo hace la palabra <b>grande</b>: <b>-ote, -ota, -azo, -ona</b>.</p><p>perro → perr<b>azo</b> · camisa → camis<b>ota</b> · ángel → angel<b>ote</b> · mujer → mujer<b>ona</b></p><p>Se escribe con <b>z</b>, no con s: perrazo, mujerzota.</p><p>-ito / -ita es lo contrario: <b>diminutivo</b> (pequeño).</p>` },
   ];
-  TEMAS.forEach((t) => { t.gen = GEN[t.id]; });
+  // Pista que no da la respuesta: la del ejercicio si la trae, si no la del tema
+  const PISTA = {
+    division: 'Piensa en la tabla: ¿el número de afuera por cuánto da el de adentro?',
+    problemas: 'Busca la palabra pista: “en total” → suma · “quedan” → resta · “cada uno” → multiplicación · “repartir igual” → división.',
+    romanos: 'I = 1 · V = 5 · X = 10 · L = 50 · C = 100. Si la chica va antes de la grande, se resta.',
+    ordinales: '1º primero · 2º segundo · 3º tercero · 4º cuarto · 5º quinto · 6º sexto · 7º séptimo · 8º octavo · 9º noveno · 10º décimo.',
+    equivalencias: 'Docena = 12 · libra = 16 onzas · metro = 10 decímetros = 100 centímetros · centímetro = 10 milímetros.',
+    columnas: 'Empieza por la derecha (unidades). En la suma, si pasa de 9, escribe la unidad y lleva 1. En la resta, si no alcanza, pide prestado 1.',
+    fracciones: 'Abajo: cuántas partes hay en total. Arriba: cuántas están pintadas. Para sumar, suma solo los de arriba.',
+    multiplicacion: 'En 4 × 3 = 12: 4 y 3 son los factores y 12 es el producto. Usa la tabla.',
+    letras: 'Cuidado con: quinientos, seiscientos, setecientos, ochocientos, novecientos.',
+    sujeto: 'Busca el verbo. ¿Quién + verbo? → sujeto. Del verbo hasta el punto → predicado.',
+    tildes: 'Aguda (fuerte al final): tilde si termina en n, s o vocal. Grave (fuerte en la penúltima): tilde si NO termina en n, s o vocal.',
+    signos: 'Las preguntas llevan ¿ ? y las emociones ¡ !, al inicio y al final.',
+    aumentativos: 'Para hacer grande: -ote, -ota, -azo, -ona (con z, no con s).',
+  };
+  TEMAS.forEach((t) => { t.gen = () => { const q = GEN[t.id](); q.pista = q.pista || PISTA[t.id]; return q; }; });
 
   // ---------- Reto de tablas: repaso espaciado (cajas de Leitner) ----------
   // Cada tabla (ej. "7x8") vive en una caja 0..5. Acierto: sube de caja y vuelve en más días.
